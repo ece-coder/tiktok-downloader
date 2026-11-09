@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Universal TikTok Watermark Remover</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #ec4899;
+            --accent-hover: #db2777;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.85rem;
+            width: 100%;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 1.5rem;
+            font-size: 0.95rem;
+            text-align: left;
+        }
+
+        .success-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .download-btn {
+            background-color: #10b981;
+            color: white;
+            text-decoration: none;
+            padding: 0.85rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            display: block;
+            margin-top: 0.75rem;
+            text-align: center;
+            touch-action: manipulation;
+        }
+
+        .download-btn:active {
+            background-color: #047857;
+        }
+
+        .error-text {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid #f87171;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>TikTok Downloader</h2>
+        <p>Paste a TikTok link to fetch the clean MP4 file.</p>
+        
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="https://www.tiktok.com/@user/video/..." autocomplete="off" autocapitalize="none" />
+        </div>
+        
+        <button id="actionBtn">Extract Video</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('actionBtn');
+        
+        // Use pointer/click events to guarantee response across iOS Safari and Android Chrome
+        btn.addEventListener('click', extractVideo);
+
+        async function extractVideo() {
+            const urlInput = document.getElementById('urlInput').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            if (!urlInput) {
+                resultDiv.innerHTML = `<div class="error-text">Please paste a valid TikTok link first.</div>`;
+                return;
+            }
+
+            // Set UI to loading state
+            btn.disabled = true;
+            btn.innerHTML = `<span class="loader"></span> Processing...`;
+            resultDiv.innerHTML = '';
+
+            try {
+                const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(urlInput)}`;
+                
+                const response = await fetch(apiUrl);
+                const json = await response.json();
+
+                if (json.code === 0 && json.data && json.data.play) {
+                    const videoNoWatermarkUrl = json.data.play;
+                    
+                    // On iOS Safari, direct downloads can get blocked. Providing a direct stream link with target="_blank" 
+                    // opens the native media player where users can tap the share sheet icon and select "Save Video".
+                    resultDiv.innerHTML = `
+                        <div class="success-box">
+                            <div><strong>Success!</strong> Watermark removed.</div>
+                            <a href="${videoNoWatermarkUrl}" class="download-btn" target="_blank">
+                                Tap to Open / Save Video
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(json.msg || "Could not parse video link.");
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="error-text">Extraction failed. Check if the link is public.</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `Extract Video`;
+            }
+        }
+    </script>
+</body>
+</html>
